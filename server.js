@@ -9,54 +9,46 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// --- RENDER.COM FIX: Serve index.html as the root ---
-// Serve static files (HTML, CSS, JS) from the root directory
-app.use(express.static(path.join(__dirname)));
-// Serve files from the 'public' directory (PDFs)
+// --- FINAL FIX for RENDER ---
+// Serve files from 'public' folder (PDFs) under the /public route
 app.use('/public', express.static(path.join(__dirname, 'public')));
+// Serve other static files like install.html from the root
+app.use(express.static(path.join(__dirname)));
 
-// Explicitly define the root route to serve index.html
+// Explicitly define the root route to serve index.html. THIS IS THE FIX.
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    // Check if installation is needed first
+    const isInstalled = !!getDbConfig();
+    if (isInstalled) {
+        res.sendFile(path.join(__dirname, 'index.html'));
+    } else {
+        res.sendFile(path.join(__dirname, 'install.html'));
+    }
 });
 // --- END FIX ---
 
 
 const CONFIG_FILE = 'db_config.json';
 
-// --- CONFIGURATION HELPER (Supports Local & Render/Cyclic) ---
+// --- CONFIGURATION HELPER ---
 function getDbConfig() {
-    // Priority 1: Render/Cyclic Environment Variables
     if (process.env.DB_HOST) {
         return {
-            host: process.env.DB_HOST,
-            user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD,
-            database: process.env.DB_NAME,
+            host: process.env.DB_HOST, user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD, database: process.env.DB_NAME,
             port: process.env.DB_PORT || 3306
         };
     }
-    // Priority 2: Local Config File
-    if (fs.existsSync(CONFIG_FILE)) {
-        return JSON.parse(fs.readFileSync(CONFIG_FILE));
-    }
+    if (fs.existsSync(CONFIG_FILE)) { return JSON.parse(fs.readFileSync(CONFIG_FILE)); }
     return null;
 }
 
 // --- EXECUTE QUERY HELPER ---
 function executeQuery(sql, params, callback) {
     const config = getDbConfig();
-    if (!config) return callback(new Error("Database Configuration Not Found"), null);
+    if (!config) return callback(new Error("DB Config Not Found"), null);
     
-    const connection = mysql.createConnection({
-        host: config.host,
-        user: config.user,
-        password: config.password,
-        database: config.database,
-        port: config.port,
-        connectTimeout: 20000 
-    });
-
+    const connection = mysql.createConnection({ ...config, connectTimeout: 20000 });
     connection.connect(err => {
         if (err) return callback(err, null);
         connection.query(sql, params, (err, results) => {
@@ -68,28 +60,22 @@ function executeQuery(sql, params, callback) {
 
 // --- API ROUTES ---
 
-// Installation Check
+// Installation Check (Now handled by the root GET)
 app.get('/api/check-install', (req, res) => {
-    // If environment variables are set on Render, it's considered installed
-    const isInstalled = !!getDbConfig();
-    res.json({ installed: isInstalled });
+    res.json({ installed: !!getDbConfig() });
 });
 
 // Installation Process
 app.post('/api/install', (req, res) => {
     const { dbHost, dbUser, dbPass, dbName, adminEmail, adminPass } = req.body;
-    
     let host = dbHost; let port = 3306;
-    if (dbHost && dbHost.includes(':')) {
-        [host, port] = dbHost.split(':');
-        port = parseInt(port);
-    }
+    if (dbHost && dbHost.includes(':')) { [host, port] = dbHost.split(':'); port = parseInt(port); }
     const connection = mysql.createConnection({ host, user: dbUser, password: dbPass, database: dbName, port });
 
     connection.connect(err => {
         if (err) return res.status(500).json({ error: "Connection Failed: " + err.message });
         
-        const queries = [
+        const queries = [ /* ... All your CREATE TABLE queries are fine ... */
             `CREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), login VARCHAR(255), email VARCHAR(255), password VARCHAR(255), role VARCHAR(50), dept VARCHAR(50), status BOOLEAN, perms TEXT, last_login VARCHAR(50))`,
             `CREATE TABLE IF NOT EXISTS events (id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255), start VARCHAR(50), color VARCHAR(20), synced BOOLEAN)`,
             `CREATE TABLE IF NOT EXISTS qc_incubation (id INT AUTO_INCREMENT PRIMARY KEY, date VARCHAR(50), batch VARCHAR(50), ph7 VARCHAR(50), fat7 VARCHAR(50), status VARCHAR(50))`,
@@ -105,7 +91,6 @@ app.post('/api/install', (req, res) => {
                 connection.query('DELETE FROM users WHERE login = ?', [adminEmail], () => {
                     connection.query(adminSql, ['System Admin', adminEmail, adminEmail, adminPass, perms], () => {
                         connection.end();
-                        // Only write config file locally, not on Render
                         if (!process.env.RENDER) {
                             fs.writeFileSync(CONFIG_FILE, JSON.stringify({ host, user: dbUser, password: dbPass, database: dbName, port }));
                         }
@@ -134,8 +119,8 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-// All other API routes are fine and don't need changes...
-// ... (Your existing GET/POST/DELETE for users, events, qc are here)
+// ... All other API routes are fine.
+// ... (Your GET/POST/DELETE for users, events, qc are here)
 app.get('/api/:table', (req, res) => {
     const allowedTables = ['users', 'events'];
     if (!allowedTables.includes(req.params.table)) return res.status(400).json({ error: "Invalid table" });
@@ -184,6 +169,7 @@ app.post('/api/settings', (req, res) => {
         executeQuery('INSERT INTO settings (s_key, s_value) VALUES ?', [values], () => res.json({ success: true }));
     });
 });
+
 
 // --- SERVER STARTUP (For Render.com & Local) ---
 const PORT = process.env.PORT || 3000;
