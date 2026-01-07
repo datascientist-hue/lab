@@ -1,0 +1,9 @@
+# Dependencies
+node_modules
+
+# Local Configs
+db_config.json
+.env.local
+
+# Deployment Cache
+.vercel
