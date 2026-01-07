@@ -9,16 +9,24 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// Serve static files from root (for index.html, install.html) and public (for PDFs)
+// --- RENDER.COM FIX: Serve index.html as the root ---
+// Serve static files (HTML, CSS, JS) from the root directory
 app.use(express.static(path.join(__dirname)));
+// Serve files from the 'public' directory (PDFs)
 app.use('/public', express.static(path.join(__dirname, 'public')));
+
+// Explicitly define the root route to serve index.html
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+// --- END FIX ---
 
 
 const CONFIG_FILE = 'db_config.json';
 
-// --- CONFIGURATION HELPER (Supports Local & Cyclic) ---
+// --- CONFIGURATION HELPER (Supports Local & Render/Cyclic) ---
 function getDbConfig() {
-    // Priority 1: Cyclic/Vercel Environment Variables
+    // Priority 1: Render/Cyclic Environment Variables
     if (process.env.DB_HOST) {
         return {
             host: process.env.DB_HOST,
@@ -62,7 +70,7 @@ function executeQuery(sql, params, callback) {
 
 // Installation Check
 app.get('/api/check-install', (req, res) => {
-    // If environment variables are set, it's considered installed on Cyclic
+    // If environment variables are set on Render, it's considered installed
     const isInstalled = !!getDbConfig();
     res.json({ installed: isInstalled });
 });
@@ -97,8 +105,8 @@ app.post('/api/install', (req, res) => {
                 connection.query('DELETE FROM users WHERE login = ?', [adminEmail], () => {
                     connection.query(adminSql, ['System Admin', adminEmail, adminEmail, adminPass, perms], () => {
                         connection.end();
-                        // Only write config file locally, not on Cyclic
-                        if (!process.env.CYCLIC_APP_ID && !process.env.VERCEL) {
+                        // Only write config file locally, not on Render
+                        if (!process.env.RENDER) {
                             fs.writeFileSync(CONFIG_FILE, JSON.stringify({ host, user: dbUser, password: dbPass, database: dbName, port }));
                         }
                         res.json({ success: true });
@@ -126,53 +134,42 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-// Generic Data Fetch (e.g., /api/users, /api/events)
+// All other API routes are fine and don't need changes...
+// ... (Your existing GET/POST/DELETE for users, events, qc are here)
 app.get('/api/:table', (req, res) => {
     const allowedTables = ['users', 'events'];
     if (!allowedTables.includes(req.params.table)) return res.status(400).json({ error: "Invalid table" });
     executeQuery(`SELECT * FROM ${req.params.table}`, [], (err, rows) => res.json(rows || []));
 });
-
-// QC Data Fetch (e.g., /api/qc/incubation)
 app.get('/api/qc/:type', (req, res) => {
     const allowedTypes = ['incubation', 'rm', 'pm'];
     if (!allowedTypes.includes(req.params.type)) return res.status(400).json({ error: "Invalid QC type" });
     executeQuery(`SELECT * FROM qc_${req.params.type}`, [], (err, rows) => res.json(rows || []));
 });
-
-// POST routes for data creation...
 app.post('/api/users', (req, res) => {
     const { name, login, email, password, role, dept, status, perms } = req.body;
     executeQuery('INSERT INTO users (name, login, email, password, role, dept, status, perms, last_login) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', 
     [name, login, email, password || '12345', role, dept, status, JSON.stringify(perms), 'Never'], (err) => res.json({ success: !err, error: err ? err.message : null }));
 });
-
+app.delete('/api/users/:id', (req, res) => {
+    executeQuery('DELETE FROM users WHERE id=?', [req.params.id], (err) => res.json({ success: !err }));
+});
 app.post('/api/events', (req, res) => {
     const { title, start, color, synced } = req.body;
     executeQuery('INSERT INTO events (title, start, color, synced) VALUES (?, ?, ?, ?)', [title, start, color, synced], (err) => res.json({ success: !err }));
 });
-
 app.post('/api/qc/incubation', (req, res) => {
     const { date, batch, ph7, fat7, status } = req.body;
     executeQuery('INSERT INTO qc_incubation (date, batch, ph7, fat7, status) VALUES (?, ?, ?, ?, ?)', [date, batch, ph7, fat7, status], (err) => res.json({ success: !err }));
 });
-
 app.post('/api/qc/rm', (req, res) => {
     const { date, material, inspector, status } = req.body;
     executeQuery('INSERT INTO qc_rm (date, material, inspector, status) VALUES (?, ?, ?, ?)', [date, material, inspector, status], (err) => res.json({ success: !err }));
 });
-
 app.post('/api/qc/pm', (req, res) => {
     const { date, material, batch, status } = req.body;
     executeQuery('INSERT INTO qc_pm (date, material, batch, status) VALUES (?, ?, ?, ?)', [date, material, batch, status], (err) => res.json({ success: !err }));
 });
-
-// DELETE User
-app.delete('/api/users/:id', (req, res) => {
-    executeQuery('DELETE FROM users WHERE id=?', [req.params.id], (err) => res.json({ success: !err }));
-});
-
-// Settings
 app.get('/api/settings', (req, res) => {
     executeQuery('SELECT * FROM settings', [], (err, rows) => {
         let config = {};
@@ -180,7 +177,6 @@ app.get('/api/settings', (req, res) => {
         res.json(config);
     });
 });
-
 app.post('/api/settings', (req, res) => {
     const { host, port, user, pass, secure } = req.body;
     const values = [['smtp_host', host], ['smtp_port', port], ['smtp_user', user], ['smtp_pass', pass], ['smtp_secure', secure]];
@@ -189,7 +185,7 @@ app.post('/api/settings', (req, res) => {
     });
 });
 
-// --- SERVER STARTUP (For Shared Hosting & Cyclic) ---
+// --- SERVER STARTUP (For Render.com & Local) ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);
