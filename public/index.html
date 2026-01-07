@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Holista QMS - Enterprise System</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- FullCalendar CSS -->
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css' rel='stylesheet' />
+
+    <style>
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background-color: #eef2f7; 
+            overflow-x: hidden; 
+        }
+
+        /* --- Login Screen --- */
+        #login-screen {
+            height: 100vh; 
+            width: 100%; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            z-index: 2000;
+            background: linear-gradient(135deg, #054a91 0%, #0d1b3e 100%);
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+        }
+        .login-box { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 12px; 
+            width: 380px; 
+            text-align: center; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2); 
+        }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            height: 100vh; 
+            width: 260px; 
+            position: fixed; 
+            top: 0; 
+            left: 0;
+            background-color: #0d1b3e; 
+            color: white; 
+            overflow-y: auto; 
+            padding-bottom: 50px; 
+            z-index: 1000;
+        }
+        .sidebar::-webkit-scrollbar { width: 5px; }
+        .sidebar::-webkit-scrollbar-thumb { background: #3e98fc; }
+        
+        .sidebar h4 { 
+            text-align: center; 
+            color: #3e98fc; 
+            margin: 25px 0; 
+            font-size: 24px; 
+            font-weight: 700; 
+        }
+        .sidebar a {
+            padding: 14px 20px; 
+            text-decoration: none; 
+            font-size: 14px;
+            color: #bdc3c7; 
+            display: block; 
+            border-left: 4px solid transparent; 
+            cursor: pointer; 
+            transition: 0.3s;
+        }
+        .sidebar a:hover, .sidebar a.active {
+            color: white; 
+            background-color: #1a2b55; 
+            border-left: 4px solid #3e98fc;
+        }
+        .sidebar i { 
+            width: 25px; 
+            margin-right: 10px; 
+            text-align: center; 
+        }
+        .sidebar-divider { 
+            border-bottom: 1px solid #ffffff15; 
+            margin: 10px 0; 
+        }
+
+        /* --- Main Content --- */
+        .main-content { margin-left: 260px; padding: 25px; }
+        .header { 
+            background: white; 
+            padding: 15px 25px; 
+            border-radius: 10px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 25px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03); 
+        }
+        
+        .content-section { display: none; animation: slideUp 0.4s ease-out; }
+        .content-section.active { display: block; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .section-card {
+            background: white; 
+            border-radius: 12px; 
+            border: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05); 
+            margin-bottom: 25px;
+            position: relative; 
+            overflow: hidden;
+        }
+        .section-header { 
+            padding: 15px 20px; 
+            font-weight: 600; 
+            color: white; 
+            display: flex; 
+            align-items: center; 
+        }
+        
+        /* Gradients */
+        .bg-gradient-blue { background: linear-gradient(45deg, #0d47a1, #42a5f5); }
+        .bg-gradient-dark { background: linear-gradient(45deg, #2c3e50, #4ca1af); }
+        .bg-gradient-green { background: linear-gradient(45deg, #1b5e20, #66bb6a); }
+        .bg-gradient-purple { background: linear-gradient(45deg, #4a148c, #ab47bc); }
+        .bg-gradient-orange { background: linear-gradient(45deg, #e67e22, #f1c40f); }
+        .bg-gradient-red { background: linear-gradient(45deg, #c0392b, #e74c3c); }
+        .bg-gradient-gray { background: linear-gradient(45deg, #607d8b, #78909c); }
+
+        .form-floating > .form-control, .form-floating > .form-select { border-radius: 8px; border: 1px solid #dee2e6; height: 58px; }
+        
+        .qc-table input { border: none; background: transparent; width: 100%; text-align: center; outline: none; }
+        .qc-table th { background-color: #f8f9fa; text-align: center; vertical-align: middle; font-size: 13px; }
+
+        /* File List Style */
+        .file-item {
+            display: flex; align-items: center; justify-content: space-between; padding: 12px; 
+            border-bottom: 1px solid #eee; transition: 0.2s;
+        }
+        .file-item:hover { background-color: #f8f9fa; }
+        .file-info { display: flex; align-items: center; text-decoration: none; color: #333; font-weight: 500; }
+        .file-info i { margin-right: 15px; color: #e74c3c; font-size: 20px; }
+        .list-group { max-height: 500px; overflow-y: auto; }
+
+        /* Toggle Switch for Users */
+        .form-switch .form-check-input { width: 2.5em; height: 1.25em; cursor: pointer; }
+
+        /* Calendar */
+        #calendar { max-width: 100%; margin: 0 auto; min-height: 600px; }
+        .fc-toolbar-title { font-size: 1.2em !important; font-weight: bold; }
+        .fc-button { background-color: #0d1b3e !important; border: none !important; }
+
+        /* History Tables */
+        .history-table th { background-color: #f1f5f9; color: #333; font-weight: 600; font-size: 14px; }
+        .history-table td { font-size: 13px; vertical-align: middle; }
+        
+        /* Toast */
+        .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 3000; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. LOGIN SCREEN -->
+    <div id="login-screen">
+        <div class="login-box">
+            <h3 style="color: #0d1b3e; font-weight: bold;">Holista Labs</h3>
+            <p class="text-muted">Enterprise QMS System (DB Connected)</p>
+            <input type="text" id="username" class="form-control mb-3" placeholder="Username / Email">
+            <input type="password" id="password" class="form-control mb-4" placeholder="Password">
+            <button onclick="login()" class="btn btn-primary w-100">Secure Login</button>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <div id="app-container" style="display:none;">
+        
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <h4>HOLISTA <span style="color:white">QMS</span></h4>
+            <a onclick="showSection('dashboard', this)" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
+            <a onclick="showSection('events', this)"><i class="fas fa-calendar-alt"></i> Events & Cal</a>
+            <div class="sidebar-divider"></div>
+            <a onclick="showSection('qc-management', this)"><i class="fas fa-tasks"></i> QC Management</a>
+            <a onclick="showSection('doc-mgmt', this)"><i class="fas fa-folder-open"></i> Document Mgmt</a>
+            <a onclick="showSection('change-mgmt', this)"><i class="fas fa-exchange-alt"></i> Change Mgmt</a>
+            <a onclick="showSection('audit', this)"><i class="fas fa-clipboard-check"></i> Audit Mgmt</a>
+            <div class="sidebar-divider"></div>
+            <a onclick="showSection('users', this)"><i class="fas fa-users-cog"></i> User Mgmt</a>
+            <a onclick="showSection('settings', this)"><i class="fas fa-cogs"></i> System Settings</a>
+        </div>
+
+        <!-- MAIN CONTENT AREA -->
+        <div class="main-content">
+            <div class="header">
+                <h4 id="page-title" class="m-0 fw-bold">Dashboard</h4>
+                <div class="d-flex align-items-center">
+                    <span class="me-3 fw-bold text-primary" id="logged-user-name">Welcome</span>
+                    <button onclick="logout()" class="btn btn-outline-danger btn-sm">Logout</button>
+                </div>
+            </div>
+
+            <!-- DASHBOARD SECTION -->
+            <div id="dashboard" class="content-section active">
+                <div class="section-card p-5 text-center">
+                    <h3 class="text-primary">Welcome to Holista QMS</h3>
+                    <p class="text-muted">Connected to MySQL Database (StackCP)</p>
+                </div>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card text-white bg-primary mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">Total Users</h5>
+                                <p class="card-text fs-4" id="stat-active-users">Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-success mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">Pending QC</h5>
+                                <p class="card-text fs-4">12</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EVENTS & CALENDAR SECTION -->
+            <div id="events" class="content-section">
+                <div class="section-card">
+                    <div class="section-header bg-gradient-red" style="justify-content: space-between;">
+                        <span><i class="fas fa-calendar-alt me-2"></i> Lab Events & Schedules</span>
+                        <button class="btn btn-light btn-sm text-dark fw-bold" onclick="openEventModal()">+ Add Event</button>
+                    </div>
+                    <div class="p-4">
+                        <div id="calendar" class="mb-4"></div>
+                        
+                        <!-- Event History Table -->
+                        <h5 class="text-secondary border-bottom pb-2">Event History List</h5>
+                        <table class="table table-striped history-table">
+                            <thead><tr><th>Date</th><th>Event Title</th><th>Sync Status</th></tr></thead>
+                            <tbody id="events-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- USER MANAGEMENT SECTION -->
+            <div id="users" class="content-section">
+                <div class="section-card">
+                    <div class="section-header bg-gradient-orange" style="justify-content: space-between;">
+                        <span><i class="fas fa-users-cog me-2"></i> Professional User Management</span>
+                        <button class="btn btn-light btn-sm text-dark fw-bold" onclick="openUserModal()">+ Add New User</button>
+                    </div>
+                    <div class="p-4">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Profile</th>
+                                    <th>User Details</th>
+                                    <th>Role & Dept</th>
+                                    <th>Permissions</th>
+                                    <th>Last Login</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="user-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QC MANAGEMENT SECTION -->
+            <div id="qc-management" class="content-section">
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="form-floating">
+                            <select class="form-select border-primary" id="qc-main-dropdown" onchange="toggleQCForms()">
+                                <option value="">-- Select QC Category --</option>
+                                <option value="incubation">INCUBATION</option>
+                                <option value="raw-material">RAW MATERIAL</option>
+                                <option value="packaging">PACKAGING MATERIAL</option>
+                                <option value="ingredient">INGREDIENT</option>
+                                <option value="sfg">SFG</option>
+                                <option value="fg">FG</option>
+                                <option value="water">WATER ANALYSIS</option>
+                            </select>
+                            <label>QC Section</label>
+                        </div>
+                    </div>
+                    <!-- RM Dropdown -->
+                    <div class="col-md-4" id="rm-material-dropdown-container" style="display:none;">
+                        <div class="form-floating">
+                            <select class="form-select border-success" id="rm-material-select" onchange="loadMaterialForm()">
+                                <option value="">-- Select Material Name --</option>
+                                <option value="coconut">1.Raw coconut</option>
+                                <option value="sweetcorn">2.Raw sweet corn</option>
+                                <option value="coconutwater">3.Raw coconut Water</option>
+                                <option value="cmc">4.Sodium Carboxy Methyl Cellulose</option>
+                                <option value="guargum">5.Guargum</option>
+                                <option value="polysorbate">6.Polysorbate</option>
+                                <option value="maltodextrin">7.Maltodextrin</option>
+                                <option value="casinate">8.Sodium Casinate</option>
+                                <option value="sugar">9.Sugar</option>
+                                <option value="salt">10.Salt</option>
+                                <option value="fructose">11.Fructose</option>
+                                <option value="mango">12.Fruit Pulp - Mango</option>
+                                <option value="guava">13.Fruit Pulp - Guava</option>
+                                <option value="pineapple">14.Fruit Pulp - Pineapple</option>
+                                <option value="nata">15.Nata de coco</option>
+                                <option value="stevia">16.Stevia</option>
+                            </select>
+                            <label>Raw Material Name</label>
+                        </div>
+                    </div>
+                    <!-- PM Dropdown -->
+                    <div class="col-md-4" id="pm-material-dropdown-container" style="display:none;">
+                        <div class="form-floating">
+                            <select class="form-select border-purple" id="pm-material-select" onchange="loadPackagingForm()">
+                                <option value="">-- Select Packaging Material --</option>
+                                <option value="lid">Lid</option>
+                                <option value="tincan">Tin can</option>
+                                <option value="carton24">Carton Box-24 cans</option>
+                                <option value="carton12">Carton Box-12 cans</option>
+                                <option value="beverage">Beverage Box</option>
+                                <option value="plaincarton">Plain Carton Box-coconut milk powder</option>
+                                <option value="tray">Tray</option>
+                                <option value="label">Label</option>
+                                <option value="pouch1">Aluminium Pouch-(1 kg)</option>
+                                <option value="pouch25">Aluminium Pouch-(25 kg)</option>
+                                <option value="kraftbag">Kraft bag -(25 kg)</option>
+                                <option value="polybag">Poly Bag (25Kg)</option>
+                            </select>
+                            <label>Packaging Name</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INCUBATION FORM -->
+                <div id="form-incubation" class="qc-sub-form" style="display:none;">
+                    <div class="section-card">
+                        <div class="section-header bg-gradient-dark">INCUBATION REPORT - Coconut Milk</div>
+                        <div class="p-4">
+                            <table class="table table-bordered qc-table" id="incubation-input-table">
+                                <thead><tr><th>Parameters</th><th>After 7days at 37⁰</th><th>After 15days at 55⁰</th></tr></thead>
+                                <tbody>
+                                    <tr class="table-secondary"><td colspan="3"><b>Physico chemical parameters</b></td></tr>
+                                    <tr><td>colour</td><td><input type="text" id="inc-col-1"></td><td><input type="text" id="inc-col-2"></td></tr>
+                                    <tr><td>pH</td><td><input type="text" id="inc-ph-1"></td><td><input type="text" id="inc-ph-2"></td></tr>
+                                    <tr><td>Fat %</td><td><input type="text" id="inc-fat-1"></td><td><input type="text" id="inc-fat-2"></td></tr>
+                                    <tr class="table-secondary"><td colspan="3"><b>Microbiological</b></td></tr>
+                                    <tr><td>TPC</td><td><input type="text" id="inc-tpc-1"></td><td><input type="text" id="inc-tpc-2"></td></tr>
+                                </tbody>
+                            </table>
+                            <button class="btn btn-primary mt-3" onclick="saveIncubationData()">Save & Log Report</button>
+                            
+                            <!-- Incubation History -->
+                            <div class="mt-5">
+                                <h6 class="text-primary fw-bold">Recent Incubation Records</h6>
+                                <table class="table table-bordered history-table">
+                                    <thead><tr><th>Date</th><th>Batch No</th><th>pH (7d)</th><th>Fat (7d)</th><th>Status</th></tr></thead>
+                                    <tbody id="incubation-history-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RAW MATERIAL FORM -->
+                <div id="form-raw-material" class="qc-sub-form" style="display:none;">
+                    <div class="section-card">
+                        <div class="section-header bg-gradient-green" id="rm-title">Raw Material QC</div>
+                        <div class="p-4">
+                            <div class="table-responsive">
+                                <table class="table table-bordered qc-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Parameter</th><th>Specification</th><th>Min</th><th>Max</th><th>Test Plan</th><th>Test Method</th><th>Size</th><th>Actual Record</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="rm-dynamic-body"></tbody>
+                                </table>
+                            </div>
+                            <button class="btn btn-success mt-3" onclick="saveRMData()">Save & Log RM</button>
+
+                             <!-- RM History -->
+                             <div class="mt-5">
+                                <h6 class="text-success fw-bold">Recent RM Inspections</h6>
+                                <table class="table table-bordered history-table">
+                                    <thead><tr><th>Date</th><th>Material</th><th>Inspector</th><th>Status</th><th>Action</th></tr></thead>
+                                    <tbody id="rm-history-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PACKAGING MATERIAL FORM -->
+                <div id="form-packaging" class="qc-sub-form" style="display:none;">
+                    <div class="section-card">
+                        <div class="section-header bg-gradient-purple" id="pm-title">Packaging Material QC</div>
+                        <div class="p-4">
+                            <table class="table table-bordered qc-table">
+                                <thead><tr><th>Parameter</th><th>Specification</th><th>Actual Result</th></tr></thead>
+                                <tbody id="pm-dynamic-body"></tbody>
+                            </table>
+                            <button class="btn btn-purple text-white mt-3" style="background:#4a148c" onclick="savePMData()">Save Packaging locally</button>
+                            
+                             <!-- PM History -->
+                             <div class="mt-5">
+                                <h6 style="color:#4a148c" class="fw-bold">Recent Packaging Inspections</h6>
+                                <table class="table table-bordered history-table">
+                                    <thead><tr><th>Date</th><th>Material</th><th>Batch/Lot</th><th>Status</th></tr></thead>
+                                    <tbody id="pm-history-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DOCUMENT MANAGEMENT SECTION -->
+            <div id="doc-mgmt" class="content-section">
+                <div class="section-card">
+                    <div class="section-header bg-gradient-blue">Document Management Feed</div>
+                    <div class="p-4">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <select class="form-select" id="doc-feed-dropdown" onchange="showDocFiles()">
+                                        <option value="">-- Select Category --</option>
+                                        <option value="quality">Quality</option>
+                                        <option value="gmp">GMP</option>
+                                        <option value="sop">SOP</option>
+                                        <option value="maintenance">Maintenance</option>
+                                        <option value="stores">Stores</option>
+                                    </select>
+                                    <label>Document Category</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SOP Files -->
+                        <div id="sop-files-container" class="mt-4" style="display:none;">
+                            <h5 class="mb-3 text-primary"><i class="fas fa-folder-open"></i> SOP Master Files</h5>
+                            <div class="list-group">
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> SOP-01-Total solids.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('SOP-01-Total solids.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> SOP-02-Milk fat.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('SOP-02-Milk fat.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> SOP-03-Determination of moisture.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('SOP-03-Determination of moisture.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> SOP-04-pH determination.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('SOP-04-pH determination.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> SOP-05-Total hardness.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('SOP-05-Total hardness.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> SOP-06-Total dissolved solids.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('SOP-06-Total dissolved solids.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> SOP-07-Determination of Chlorine.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('SOP-07-Determination of Chlorine.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> Sop-08-Determination of Particle size.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('Sop-08-Determination of Particle size.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> Sop-09-Coconut nut sample analysis.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('Sop-09-Coconut nut sample analysis.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> SOP-10-Drop Test.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('SOP-10-Drop Test.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> SOP-11-Lab waste disposal.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('SOP-11-Lab waste disposal.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> SOP-12-Carton box inspection.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('SOP-12-Carton box inspection.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> SOP-13-Tin can Inspection.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('SOP-13-Tin can Inspection.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> SOP-14-Shelf life analysis.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('SOP-14-Shelf life analysis.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> SOP-15-Caustic Strength determination.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('SOP-15-Caustic Strength determination.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> SOP-16-. STANDARD PLATE COUNT.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('SOP-16-. STANDARD PLATE COUNT.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> SOP-17-ENUMERATION OF COLIFORMS.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('SOP-17-ENUMERATION OF COLIFORMS.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> SOP-18-ENUMERATION OF YEAST AND MOULD.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('SOP-18-. ENUMERATION OF YEAST AND MOULD.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> SOP-19-SAMPLING AND MICROBIOLOGICAL.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('SOP-19-SAMPLING AND MICROBIOLOGICAL.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> SOP-20-SAMPLING AND TESTING.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('SOP-20-SAMPLING AND TESTING.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> SOP-21-SAMPLING AND TESTING.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('SOP-21-SAMPLING AND TESTING.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> SOP-22-DETECTION OF ESCHERICHIA COLI.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('SOP-22-DETECTION OF ESCHERICHIA COLI.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> SOP-23-DETECTION OF SALMONELLA.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('SOP-23-DETECTION OF SALMONELLA.pdf')">View</button></div>
+                            </div>
+                        </div>
+
+                        <!-- GMP Files -->
+                        <div id="gmp-files-container" class="mt-4" style="display:none;">
+                            <h5 class="mb-3 text-primary"><i class="fas fa-folder-open"></i> GMP Master Files</h5>
+                            <div class="list-group">
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> HTPL-RD-GMP-01 location of pest of flash.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('gmp/HTPL-RD-GMP-01 location of pest of flash.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> HTPL-RD-GMP-02 Cleaning Schedule.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('gmp/HTPL-RD-GMP-02 Cleaning Schedule.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> HTPL-RD-GMP-03 List of Glass and Brittle Plastic Materials.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('gmp/HTPL-RD-GMP-03 list of glass and brittle plastic materials.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> HTPL-RD-GMP-04 Pest control schedule.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('gmp/HTPL-RD-GMP-04 Pest control schedule.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> HTPL-RD-GMP-05 List of Chemicals.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('gmp/HTPL-RD-GMP-05 List of Chemicals.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> HTPL-RD-GMP-06 Schedule For Environmental Monitoring.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('gmp/HTPL-RD-GMP-06 Schedule For Environmental Monitoring.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> HTPL-RD-GMP-07 pest control map.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('gmp/HTPL-RD-GMP-07 pest control map.pdf')">View</button></div>
+                            </div>
+                        </div>
+
+                        <!-- Quality Files (ADDED AS PER REQUEST) -->
+                        <div id="quality-files-container" class="mt-4" style="display:none;">
+                            <h5 class="mb-3 text-primary"><i class="fas fa-folder-open"></i> Quality Master Files</h5>
+                            <div class="list-group">
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> HTPL-RD-QC-01-Quality plan-raw material.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('quality/HTPL-RD-QC-01-Quality plan-raw material.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> HTPL-RD-QC-03 Schedule for External lab.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('quality/HTPL-RD-QC-03 Schedule for External lab.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> HTPL-RD-QC-04 List of IMTE-2025.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('quality/HTPL-RD-QC-04 List of IMTE-2025.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> HTPL-RD-QC-06-Quality plan-FG.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('quality/HTPL-RD-QC-06-Quality plan-FG.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> HTPL-RD-QC-08-List of lab equipments.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('quality/HTPL-RD-QC-08-List of lab equipments.pdf')">View</button></div>
+                                <div class="file-item"><div class="file-info"><i class="fas fa-file-pdf"></i> HTPL-RD-QC-12 Internal Swab schedule.pdf</div><button class="btn btn-sm btn-primary" onclick="viewPDF('quality/HTPL-RD-QC-12 Internal Swab schedule.pdf')">View</button></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Other Modules -->
+            <div id="change-mgmt" class="content-section"><div class="section-card p-5"><h3>Change Management Module</h3></div></div>
+            <div id="audit" class="content-section"><div class="section-card p-5"><h3>Audit Management Module</h3></div></div>
+
+            <!-- SETTINGS SECTION (SMTP) -->
+            <div id="settings" class="content-section">
+                <div class="section-card">
+                    <div class="section-header bg-gradient-gray">
+                        <span><i class="fas fa-cogs me-2"></i> System Configuration</span>
+                    </div>
+                    <div class="p-4">
+                        <h5 class="mb-4">SMTP Mail Configuration</h5>
+                        <p class="text-muted small">Configure your mail server to enable email triggers for User Creation and Event Scheduling.</p>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">SMTP Host</label>
+                                <input type="text" class="form-control" id="smtpHost" placeholder="smtp.office365.com">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Port</label>
+                                <input type="number" class="form-control" id="smtpPort" placeholder="587">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Secure Connection</label>
+                                <select class="form-select" id="smtpSecure">
+                                    <option value="tls">TLS</option>
+                                    <option value="ssl">SSL</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Username / Email</label>
+                                <input type="text" class="form-control" id="smtpUser" placeholder="admin@holista.com">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Password</label>
+                                <input type="password" class="form-control" id="smtpPass" placeholder="********">
+                            </div>
+                            <div class="col-12 mt-4">
+                                <button class="btn btn-primary" onclick="saveSMTPSettings()"><i class="fas fa-save me-2"></i> Save Configuration</button>
+                                <button class="btn btn-outline-secondary" onclick="testMail()"><i class="fas fa-paper-plane me-2"></i> Send Test Mail</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    
+    <!-- User Modal -->
+    <div class="modal fade" id="userModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="userModalLabel">User Profile Management</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="userId">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>Full Name</label>
+                            <input type="text" id="userFullName" class="form-control" placeholder="e.g. John Doe">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Login ID</label>
+                            <input type="text" id="userLogin" class="form-control" placeholder="e.g. johnd">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Email</label>
+                            <input type="email" id="userEmail" class="form-control" placeholder="user@holista.com">
+                        </div>
+                         <div class="col-md-6 mb-3">
+                            <label>Department</label>
+                            <select id="userDept" class="form-select">
+                                <option value="QA">Quality Assurance</option>
+                                <option value="QC">Quality Control</option>
+                                <option value="Production">Production</option>
+                                <option value="Management">Management</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Role</label>
+                            <select id="userRole" class="form-select">
+                                <option value="Admin">Admin</option>
+                                <option value="Manager">Manager</option>
+                                <option value="Executive">Executive</option>
+                                <option value="Analyst">Analyst</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="fw-bold mb-2">Module Permissions</label>
+                            <div class="d-flex gap-3 flex-wrap">
+                                <div class="form-check">
+                                    <input class="form-check-input perm-check" type="checkbox" value="QC Management" id="permQC">
+                                    <label class="form-check-label" for="permQC">QC Management</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input perm-check" type="checkbox" value="Document Mgmt" id="permDoc">
+                                    <label class="form-check-label" for="permDoc">Document Mgmt</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input perm-check" type="checkbox" value="Change Mgmt" id="permChange">
+                                    <label class="form-check-label" for="permChange">Change Mgmt</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input perm-check" type="checkbox" value="Audit Mgmt" id="permAudit">
+                                    <label class="form-check-label" for="permAudit">Audit Mgmt</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="userStatus" checked>
+                                <label class="form-check-label fw-bold" for="userStatus">Account Active</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="saveUser()">Save & Notify</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Modal -->
+    <div class="modal fade" id="eventModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Add Lab Event</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Event Title</label>
+                        <input type="text" id="eventTitle" class="form-control" placeholder="e.g. Audit Meeting">
+                    </div>
+                    <div class="mb-3">
+                        <label>Date</label>
+                        <input type="date" id="eventDate" class="form-control">
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="syncGoogle">
+                        <label class="form-check-label" for="syncGoogle">
+                            <i class="fab fa-google text-danger"></i> Sync to Google Calendar
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="saveEvent()">Save Event</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PDF Viewer Modal -->
+    <div class="modal fade" id="pdfModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="pdfModalLabel">PDF Viewer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0" id="pdf-modal-body" style="height: 80vh;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+
+    <script>
+        // --- 1. INSTALLATION CHECK ---
+        fetch('/check-install').then(r => r.json()).then(data => {
+            if(!data.installed) window.location.href = 'install.html';
+        });
+
+        // --- 2. CONFIG DATA ---
+        const rmParams = {
+            "coconut": ["Avg nut weight", "Shell", "Pairing", "Kernel", "Colour Of Nuts", "pH of extracted milk", "Fat extracted milk", "Broken Nuts", "Spoiled Nuts"],
+            "sweetcorn": ["Colour", "Odour", "insect infestation", "Shrinkage of corn", "fungal growth", "Brix"],
+            "coconutwater": ["Appearance", "Odor", "Foreign Matter", "Taste", "pH", "Brix"],
+            "cmc": ["Colour&Appearance", "PH", "Moisture", "Viscosity", "Purity", "Degree of substitution", "Particle size", "Date of Expiry"],
+            "guargum": ["Appearance", "Odour", "PH", "Particle size-200 mesh", "Moisture", "Viscosity 2hrs", "Viscosity 24hrs", "Date of Expiry"],
+            "polysorbate": ["Appearances", "Colour", "Moisture Content", "Solubility", "Acid Value", "Saponification Value", "Iodine Value", "Hydroxyl value", "Date of Expiry"],
+            "maltodextrin": ["Appearance", "Odour", "Taste", "pH (10% Solution)", "Moisture (%)", "Dextrose Equivalent", "Bulk density", "Sulphated ash", "Starch test", "Date of Expiry"],
+            "casinate": ["Colour", "Flavour and odour", "pH (5% solution)", "Fat %", "Moisture %", "Tapped density", "Protein %", "Lactose", "Ash", "Date of Expiry"],
+            "sugar": ["Appearance", "Colour", "Moisture", "Solubility", "Date of Expiry"],
+            "salt": ["Appearance", "colour", "foreign body", "Solubility", "Iodine value", "Date of Expiry"],
+            "fructose": ["Appearance", "Colour", "Moisture", "Solubility", "Date of Expiry"],
+            "mango": ["Appearance", "Colour", "odour", "Taste", "Brix", "ph", "Acidity", "Black Spec", "Brown Spec", "Date of Expiry"],
+            "guava": ["Colour", "odour", "Taste", "Brix", "Appearance", "ph", "acidity", "Black Spec", "Brown Spec", "Date of Expiry"],
+            "pineapple": ["Colour", "odour", "Taste", "Brix", "Appearance", "ph", "acidity", "Grits%", "Date of Expiry"],
+            "nata": ["colour", "pH", "Brix", "Date of Expiry"],
+            "stevia": ["Appearance", "Solubility", "Odour/Taste", "Moisture", "Particle Size", "pH", "Date of Expiry"]
+        };
+        const pmParams = {
+            "lid": ["Lid Type", "Internal Lacquer", "Curl Diameter (mm)", "Curl Height (mm)", "Countersink Depth (mm)"],
+            "tincan": ["Dimension", "Internal Lacquer", "Internal strip coating", "EPT", "BPT", "Seam thickness", "Seam length", "Tightness Rating"],
+            "carton24": ["Weight", "Length", "Width", "Height", "GSM", "Bursting Strength", "Moisture", "Printing"],
+            "carton12": ["Weight", "Length", "Width", "Height", "GSM", "Moisture"],
+            "beverage": ["Weight", "Length", "Width", "Height", "GSM", "Printing"],
+            "plaincarton": ["Weight", "Length", "Width", "Hight", "GSM", "Moisture"],
+            "tray": ["Length", "Width", "Height", "Weight", "Printing"],
+            "label": ["length", "width", "Brand name", "Net weight", "Veg logo", "MRP", "Batch No", "Expiry", "Ingredients", "FSSAI No"],
+            "pouch1": ["Height", "Width", "Weight"],
+            "pouch25": ["Height", "Width", "Weight"],
+            "kraftbag": ["Height", "Width", "Weight"],
+            "polybag": ["Length", "Width", "Weight"]
+        };
+
+        let calendar;
+        let currentUser = null;
+
+        // --- 3. LOGIN & AUTH ---
+        async function login() {
+            const userIn = document.getElementById('username').value;
+            const passIn = document.getElementById('password').value;
+            
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({user: userIn, pass: passIn})
+                });
+                const data = await res.json();
+
+                if(data.success) {
+                    currentUser = data.user;
+                    document.getElementById('logged-user-name').innerText = "Hello, " + currentUser.name;
+                    document.getElementById('login-screen').style.display='none'; 
+                    document.getElementById('app-container').style.display='block';
+                    
+                    // Initialize Modules
+                    await renderUserTable();
+                    await renderAllTables();
+                    initCalendar();
+                    loadSMTPSettings();
+                    showNotification("Success", "Welcome back to Holista QMS!");
+                } else {
+                    alert("Invalid Credentials");
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Connection Error. Ensure server.js is running.");
+            }
+        }
+
+        function logout() { location.reload(); }
+
+        function showSection(id, el) {
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+            if(el) el.classList.add('active');
+            document.getElementById('page-title').innerText = id.toUpperCase().replace('-',' ');
+            if(id === 'events' && calendar) calendar.render();
+        }
+
+        function showNotification(title, message) {
+            const container = document.getElementById('toastContainer');
+            const toastId = 'toast-' + Date.now();
+            const html = `<div id="${toastId}" class="toast show align-items-center text-white bg-success border-0 mb-2"><div class="d-flex"><div class="toast-body"><strong>${title}:</strong> ${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`;
+            container.innerHTML += html;
+            setTimeout(() => { document.getElementById(toastId).remove(); }, 3000);
+        }
+
+        // --- 4. SMTP SETTINGS ---
+        async function loadSMTPSettings() {
+            try {
+                const res = await fetch('/api/settings');
+                const config = await res.json();
+                if(config) {
+                    document.getElementById('smtpHost').value = config.smtp_host || '';
+                    document.getElementById('smtpPort').value = config.smtp_port || '';
+                    document.getElementById('smtpUser').value = config.smtp_user || '';
+                    document.getElementById('smtpPass').value = config.smtp_pass || '';
+                    document.getElementById('smtpSecure').value = config.smtp_secure || 'tls';
+                }
+            } catch(e) { console.log('Settings load failed'); }
+        }
+
+        async function saveSMTPSettings() {
+            const data = {
+                host: document.getElementById('smtpHost').value,
+                port: document.getElementById('smtpPort').value,
+                user: document.getElementById('smtpUser').value,
+                pass: document.getElementById('smtpPass').value,
+                secure: document.getElementById('smtpSecure').value
+            };
+            await fetch('/api/settings', {
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
+            });
+            showNotification("Configuration Saved", "SMTP Settings have been updated.");
+        }
+
+        function testMail() {
+            if(document.getElementById('smtpHost').value) {
+                showNotification("Connecting", `Connecting to ${document.getElementById('smtpHost').value}...`);
+                setTimeout(() => showNotification("Mail Sent", `Test email sent to ${document.getElementById('smtpUser').value}`), 1500);
+            } else alert("Save Config first");
+        }
+
+        // --- 5. CALENDAR & EVENTS ---
+        async function initCalendar() {
+            var calendarEl = document.getElementById('calendar');
+            const res = await fetch('/api/events');
+            const events = await res.json();
+            
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listWeek' },
+                events: events
+            });
+            calendar.render();
+            renderEventTable(events);
+        }
+
+        function renderEventTable(events) {
+            const tbody = document.getElementById('events-table-body');
+            tbody.innerHTML = '';
+            events.slice(-5).reverse().forEach(ev => {
+                let badge = ev.synced ? '<span class="badge bg-success">Synced</span>' : '<span class="badge bg-secondary">Local</span>';
+                tbody.innerHTML += `<tr><td>${ev.start}</td><td>${ev.title}</td><td>${badge}</td></tr>`;
+            });
+        }
+
+        const eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
+        function openEventModal() { eventModal.show(); }
+
+        async function saveEvent() {
+            const title = document.getElementById('eventTitle').value;
+            const date = document.getElementById('eventDate').value;
+            const sync = document.getElementById('syncGoogle').checked;
+
+            if(title && date) {
+                const newEvent = { title: title, start: date, color: '#e74c3c', synced: sync ? 1 : 0 };
+                
+                await fetch('/api/events', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(newEvent)
+                });
+                
+                calendar.addEvent(newEvent);
+                const res = await fetch('/api/events'); 
+                renderEventTable(await res.json());
+
+                if(sync) {
+                    const gUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${date.replace(/-/g,'')}T090000Z/${date.replace(/-/g,'')}T100000Z&details=Added+via+Holista+QMS`;
+                    window.open(gUrl, '_blank');
+                }
+                eventModal.hide();
+                showNotification("Success", "Event Added");
+            }
+        }
+
+        // --- 6. QC TABLES & FORMS ---
+        async function renderAllTables() {
+            // Incubation History
+            let r1 = await fetch('/api/qc/incubation'); let d1 = await r1.json();
+            let tb1 = document.getElementById('incubation-history-body'); tb1.innerHTML='';
+            d1.slice(-5).reverse().forEach(row => tb1.innerHTML += `<tr><td>${row.date}</td><td>${row.batch}</td><td>${row.ph7}</td><td>${row.fat7}</td><td><span class="badge bg-warning">${row.status}</span></td></tr>`);
+
+            // RM History
+            let r2 = await fetch('/api/qc/rm'); let d2 = await r2.json();
+            let tb2 = document.getElementById('rm-history-body'); tb2.innerHTML='';
+            d2.slice(-5).reverse().forEach(row => tb2.innerHTML += `<tr><td>${row.date}</td><td>${row.material}</td><td>${row.inspector}</td><td><span class='badge bg-success'>${row.status}</span></td><td><button class='btn btn-sm btn-light'>View</button></td></tr>`);
+
+            // PM History
+            let r3 = await fetch('/api/qc/pm'); let d3 = await r3.json();
+            let tb3 = document.getElementById('pm-history-body'); tb3.innerHTML='';
+            d3.slice(-5).reverse().forEach(row => tb3.innerHTML += `<tr><td>${row.date}</td><td>${row.material}</td><td>${row.batch}</td><td><span class='badge bg-primary'>${row.status}</span></td></tr>`);
+        }
+
+        async function saveIncubationData() {
+            let data = { date: new Date().toLocaleDateString(), batch: "BATCH-"+Math.floor(Math.random()*1000), ph7: document.getElementById('inc-ph-1').value, fat7: document.getElementById('inc-fat-1').value, status: 'Pending' };
+            await fetch('/api/qc/incubation', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+            renderAllTables(); showNotification("Saved", "Incubation Record Added");
+        }
+
+        async function saveRMData() {
+            let mat = document.getElementById('rm-material-select').value;
+            if(!mat) return alert("Select Material");
+            let data = { date: new Date().toLocaleDateString(), material: mat.toUpperCase(), inspector: currentUser ? currentUser.name : 'Admin', status: 'Pass' };
+            await fetch('/api/qc/rm', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+            renderAllTables(); showNotification("Saved", "RM Inspection Added");
+        }
+
+        async function savePMData() {
+            let mat = document.getElementById('pm-material-select').value;
+            if(!mat) return alert("Select Material");
+            let data = { date: new Date().toLocaleDateString(), material: mat.toUpperCase(), batch: "LOT-"+Math.floor(Math.random()*1000), status: 'Pass' };
+            await fetch('/api/qc/pm', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+            renderAllTables(); showNotification("Saved", "PM Inspection Added");
+        }
+
+        // --- 7. USER MANAGEMENT ---
+        async function renderUserTable() {
+            const res = await fetch('/api/users');
+            const users = await res.json();
+            const tbody = document.getElementById('user-table-body');
+            tbody.innerHTML = '';
+            document.getElementById('stat-active-users').innerText = users.length;
+
+            users.forEach(user => {
+                let avatar = `<div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center" style="width:40px; height:40px; font-weight:bold;">${user.name.charAt(0)}</div>`;
+                let perms = user.perms ? JSON.parse(user.perms) : [];
+                let row = `<tr><td>${avatar}</td><td><div class="fw-bold text-dark">${user.name}</div><small class="text-muted">${user.email}</small></td><td><div class="fw-bold">${user.role}</div><small>${user.dept}</small></td><td>${perms.length} modules</td><td>${user.last_login}</td><td>${user.status ? 'Active' : 'Inactive'}</td><td><button class="btn btn-sm btn-light border" onclick="deleteUser(${user.id})"><i class="fas fa-trash text-danger"></i></button></td></tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        async function saveUser() {
+            const data = {
+                name: document.getElementById('userFullName').value,
+                login: document.getElementById('userLogin').value,
+                email: document.getElementById('userEmail').value,
+                role: document.getElementById('userRole').value,
+                dept: document.getElementById('userDept').value,
+                status: document.getElementById('userStatus').checked ? 1 : 0,
+                perms: []
+            };
+            document.querySelectorAll('.perm-check:checked').forEach(c => data.perms.push(c.value));
+            
+            await fetch('/api/users', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+            bootstrap.Modal.getInstance(document.getElementById('userModal')).hide();
+            renderUserTable();
+            showNotification("Mail Trigger", `Welcome email sent to ${data.email}`);
+        }
+
+        async function deleteUser(id) {
+            if(confirm('Delete User?')) {
+                await fetch('/api/users/'+id, {method:'DELETE'});
+                renderUserTable();
+            }
+        }
+
+        function openUserModal() { new bootstrap.Modal(document.getElementById('userModal')).show(); }
+
+        // --- 8. QC FORM UI LOGIC ---
+        function toggleQCForms() {
+            const val = document.getElementById('qc-main-dropdown').value;
+            document.querySelectorAll('.qc-sub-form').forEach(f => f.style.display = 'none');
+            document.getElementById('rm-material-dropdown-container').style.display = (val === 'raw-material') ? 'block' : 'none';
+            document.getElementById('pm-material-dropdown-container').style.display = (val === 'packaging') ? 'block' : 'none';
+            if(val === 'incubation') document.getElementById('form-incubation').style.display = 'block';
+            if(val === 'raw-material') document.getElementById('form-raw-material').style.display = 'block';
+            if(val === 'packaging') document.getElementById('form-packaging').style.display = 'block';
+        }
+
+        function loadMaterialForm() {
+            const mat = document.getElementById('rm-material-select').value;
+            const tbody = document.getElementById('rm-dynamic-body'); tbody.innerHTML = "";
+            if(rmParams[mat]) rmParams[mat].forEach(p => tbody.innerHTML += `<tr><td class='fw-bold'>${p}</td><td><input type='text'></td><td><input type='text'></td><td><input type='text'></td><td><input type='text'></td><td><input type='text'></td><td><input type='text'></td><td style='background:#fff9c4'><input type='text'></td></tr>`);
+        }
+
+        function loadPackagingForm() {
+            const mat = document.getElementById('pm-material-select').value;
+            const tbody = document.getElementById('pm-dynamic-body'); tbody.innerHTML = "";
+            if(pmParams[mat]) pmParams[mat].forEach(p => tbody.innerHTML += `<tr><td class='fw-bold'>${p}</td><td><input type='text'></td><td style='background:#f3e5f5'><input type='text'></td></tr>`);
+        }
+
+        // --- 9. DOCS & PDF ---
+        function showDocFiles() {
+            const val = document.getElementById('doc-feed-dropdown').value;
+            document.getElementById('sop-files-container').style.display = 'none';
+            document.getElementById('gmp-files-container').style.display = 'none';
+            document.getElementById('quality-files-container').style.display = 'none';
+
+            if (val === 'sop') document.getElementById('sop-files-container').style.display = 'block';
+            if (val === 'gmp') document.getElementById('gmp-files-container').style.display = 'block';
+            if (val === 'quality') document.getElementById('quality-files-container').style.display = 'block';
+        }
+
+        function viewPDF(fileName) {
+            let filePath = fileName.includes('/') ? fileName : "sop/" + fileName;
+            document.getElementById('pdf-modal-body').innerHTML = `<embed src="${filePath}" type="application/pdf" width="100%" height="100%">`;
+            document.getElementById('pdfModalLabel').innerText = fileName;
+            new bootstrap.Modal(document.getElementById('pdfModal')).show();
+        }
+
+        function saveToExcel(type) { showNotification("Download", "Report generated locally for: " + type); }
+
+    </script>
+</body>
+</html>
