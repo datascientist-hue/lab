@@ -9,13 +9,13 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// --- RENDER.COM FIX ---
-// Serve static files from the 'public' directory first
-app.use('/public', express.static(path.join(__dirname, 'public')));
-// Serve the root static files like index.html
+// --- FINAL RENDER FIX ---
+// Serve static files (HTML, CSS, JS) from the root directory
 app.use(express.static(path.join(__dirname)));
+// Serve files from the 'public' directory (PDFs)
+app.use('/public', express.static(path.join(__dirname, 'public')));
 
-// Explicitly define the root route. THIS IS THE MOST IMPORTANT PART.
+// Explicitly define the root route to serve index.html. THIS IS THE FIX.
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -26,23 +26,30 @@ const CONFIG_FILE = 'db_config.json';
 
 // --- CONFIGURATION HELPER ---
 function getDbConfig() {
+    // Priority 1: Render Environment Variables
     if (process.env.DB_HOST) {
         return {
-            host: process.env.DB_HOST, user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD, database: process.env.DB_NAME,
+            host: process.env.DB_HOST,
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
+            database: process.env.DB_NAME,
             port: process.env.DB_PORT || 3306
         };
     }
-    if (fs.existsSync(CONFIG_FILE)) { return JSON.parse(fs.readFileSync(CONFIG_FILE)); }
+    // Priority 2: Local Config File
+    if (fs.existsSync(CONFIG_FILE)) {
+        return JSON.parse(fs.readFileSync(CONFIG_FILE));
+    }
     return null;
 }
 
 // --- EXECUTE QUERY HELPER ---
 function executeQuery(sql, params, callback) {
     const config = getDbConfig();
-    if (!config) return callback(new Error("DB Config Not Found"), null);
+    if (!config) return callback(new Error("Database Configuration Not Found"), null);
     
     const connection = mysql.createConnection({ ...config, connectTimeout: 20000 });
+
     connection.connect(err => {
         if (err) return callback(err, null);
         connection.query(sql, params, (err, results) => {
@@ -53,10 +60,14 @@ function executeQuery(sql, params, callback) {
 }
 
 // --- API ROUTES ---
+
+// Installation Check
 app.get('/api/check-install', (req, res) => {
-    res.json({ installed: !!getDbConfig() });
+    const isInstalled = !!getDbConfig();
+    res.json({ installed: isInstalled });
 });
 
+// Installation Process
 app.post('/api/install', (req, res) => {
     const { dbHost, dbUser, dbPass, dbName, adminEmail, adminPass } = req.body;
     let host = dbHost; let port = 3306;
@@ -96,6 +107,7 @@ app.post('/api/install', (req, res) => {
     });
 });
 
+// Login
 app.post('/api/login', (req, res) => {
     const { user, pass } = req.body;
     executeQuery('SELECT * FROM users WHERE (login = ? OR email = ?) AND password = ?', [user, user, pass], (err, results) => {
