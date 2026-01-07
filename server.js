@@ -9,21 +9,15 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// --- FINAL FIX for RENDER ---
-// Serve files from 'public' folder (PDFs) under the /public route
+// --- RENDER.COM FIX ---
+// Serve static files from the 'public' directory first
 app.use('/public', express.static(path.join(__dirname, 'public')));
-// Serve other static files like install.html from the root
+// Serve the root static files like index.html
 app.use(express.static(path.join(__dirname)));
 
-// Explicitly define the root route to serve index.html. THIS IS THE FIX.
+// Explicitly define the root route. THIS IS THE MOST IMPORTANT PART.
 app.get('/', (req, res) => {
-    // Check if installation is needed first
-    const isInstalled = !!getDbConfig();
-    if (isInstalled) {
-        res.sendFile(path.join(__dirname, 'index.html'));
-    } else {
-        res.sendFile(path.join(__dirname, 'install.html'));
-    }
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 // --- END FIX ---
 
@@ -59,13 +53,10 @@ function executeQuery(sql, params, callback) {
 }
 
 // --- API ROUTES ---
-
-// Installation Check (Now handled by the root GET)
 app.get('/api/check-install', (req, res) => {
     res.json({ installed: !!getDbConfig() });
 });
 
-// Installation Process
 app.post('/api/install', (req, res) => {
     const { dbHost, dbUser, dbPass, dbName, adminEmail, adminPass } = req.body;
     let host = dbHost; let port = 3306;
@@ -75,7 +66,7 @@ app.post('/api/install', (req, res) => {
     connection.connect(err => {
         if (err) return res.status(500).json({ error: "Connection Failed: " + err.message });
         
-        const queries = [ /* ... All your CREATE TABLE queries are fine ... */
+        const queries = [
             `CREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), login VARCHAR(255), email VARCHAR(255), password VARCHAR(255), role VARCHAR(50), dept VARCHAR(50), status BOOLEAN, perms TEXT, last_login VARCHAR(50))`,
             `CREATE TABLE IF NOT EXISTS events (id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255), start VARCHAR(50), color VARCHAR(20), synced BOOLEAN)`,
             `CREATE TABLE IF NOT EXISTS qc_incubation (id INT AUTO_INCREMENT PRIMARY KEY, date VARCHAR(50), batch VARCHAR(50), ph7 VARCHAR(50), fat7 VARCHAR(50), status VARCHAR(50))`,
@@ -105,7 +96,6 @@ app.post('/api/install', (req, res) => {
     });
 });
 
-// Login
 app.post('/api/login', (req, res) => {
     const { user, pass } = req.body;
     executeQuery('SELECT * FROM users WHERE (login = ? OR email = ?) AND password = ?', [user, user, pass], (err, results) => {
@@ -119,8 +109,7 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-// ... All other API routes are fine.
-// ... (Your GET/POST/DELETE for users, events, qc are here)
+// All other API routes...
 app.get('/api/:table', (req, res) => {
     const allowedTables = ['users', 'events'];
     if (!allowedTables.includes(req.params.table)) return res.status(400).json({ error: "Invalid table" });
@@ -170,8 +159,7 @@ app.post('/api/settings', (req, res) => {
     });
 });
 
-
-// --- SERVER STARTUP (For Render.com & Local) ---
+// --- SERVER STARTUP ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);
